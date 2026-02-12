@@ -44,6 +44,7 @@ class EnhancedAgentResult:
     security_audit: Optional[Dict[str, Any]] = None
     domain_analysis: Optional[Dict[str, Any]] = None
     ambiguity_resolution: Optional[Dict[str, Any]] = None
+    cicd_pipeline: Optional[str] = None
     recommendations: List[str] = None
     
     def __post_init__(self):
@@ -126,11 +127,18 @@ class ProductionGradeGoatCodeAgent(GoatCodeAgent):
         print("\n💻 Phase 5: Code Generation...")
         base_result = await super().execute(prompt, project_path)
         
-        # Phase 6: Integration & Validation
-        print("\n✅ Phase 6: Integration & Validation...")
+        # Phase 6: CI/CD Generation
+        print("\n🚀 Phase 6: CI/CD Generation...")
+        cicd_path = await self._generate_cicd(project_path)
+        
+        # Phase 7: Integration & Validation
+        print("\n✅ Phase 7: Integration & Validation...")
         recommendations = self._generate_recommendations(
             base_result, architecture, security_audit, domain_analysis
         )
+        
+        if cicd_path:
+            recommendations.append(f"🚀 CI/CD: Automated pipeline generated at {cicd_path}")
         
         return EnhancedAgentResult(
             status=base_result.status.value,
@@ -142,7 +150,8 @@ class ProductionGradeGoatCodeAgent(GoatCodeAgent):
             architecture_design=architecture,
             security_audit=security_audit,
             domain_analysis=domain_analysis,
-            ambiguity_resolution=ambiguity_result,
+            ambiguity_resolution=ambiguity_resolution_result if 'ambiguity_resolution_result' in locals() else ambiguity_result,
+            cicd_pipeline=cicd_path if 'cicd_path' in locals() else None,
             recommendations=recommendations
         )
     
@@ -200,6 +209,22 @@ class ProductionGradeGoatCodeAgent(GoatCodeAgent):
             )
         
         return None
+
+    async def _generate_cicd(self, project_path: str) -> Optional[str]:
+        """Generate CI/CD pipeline."""
+        # Detect project type
+        project_type = "python"
+        if os.path.exists(os.path.join(project_path, 'package.json')):
+            project_type = "node"
+        elif os.path.exists(os.path.join(project_path, 'pubspec.yaml')):
+            project_type = "flutter"
+            
+        result = await self.tools.execute('generate_cicd', {
+            'project_type': project_type,
+            'path': project_path
+        })
+        
+        return result.data if result.success else None
     
     def _generate_recommendations(
         self,

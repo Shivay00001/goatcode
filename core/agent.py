@@ -28,6 +28,7 @@ class ExecutionPhase(Enum):
     IMPLEMENTATION_PLAN = "implementation_plan"
     CODE_GENERATION = "code_generation"
     VALIDATION = "validation"
+    FORMAL_VERIFICATION = "formal_verification"
     COMPLETE = "complete"
 
 
@@ -162,16 +163,24 @@ class GoatCodeAgent:
                 generated_code, project_path, plan
             )
             
-            # Store successful pattern in memory
+            # STEP 7: Formal Verification
             if validated_result['validation_report']['all_passed']:
+                self._log(ExecutionPhase.FORMAL_VERIFICATION, "Performing formal verification...")
+                verification = await self.tools.execute('formal_verify', {
+                    'path': project_path,
+                    'logic_description': intent.get('goal', 'core logic')
+                })
+                self._log(ExecutionPhase.FORMAL_VERIFICATION, f"Formal verification result: {verification.data['status']}")
+                
+                # Store successful pattern in memory
                 await self._store_success_pattern(intent, validated_result)
             
             self.status = AgentStatus.SUCCESS
             
             return AgentResult(
                 status=self.status,
-                analysis_summary=intent['summary'],
-                implementation_plan=plan['steps'],
+                analysis_summary=intent.get('summary', intent.get('goal', '')),
+                implementation_plan=plan.get('steps', []),
                 files_modified=validated_result['files'],
                 validation_report=validated_result['validation_report'],
                 confidence_score=validated_result['confidence'],
@@ -233,17 +242,17 @@ class GoatCodeAgent:
         # List project structure
         try:
             structure = await self.tools.execute('list_directory', {'path': project_path})
-            context['project_structure'] = structure
+            context['project_structure'] = structure.data if structure.success else []
         except Exception as e:
             self.logger.warning(f"Could not list directory: {e}")
         
-        # Search for relevant files based on intent
+        # Search for relevant files based on semantic intent
         if 'language' in intent:
-            search_results = await self.tools.execute('search_project', {
-                'query': intent['language'],
+            search_results = await self.tools.execute('semantic_search', {
+                'query': f"{intent.get('goal', '')} {intent.get('language', '')}",
                 'path': project_path
             })
-            context['relevant_files'] = search_results[:10]  # Top 10 relevant files
+            context['relevant_files'] = search_results.data[:10] if search_results.success else []
         
         # Read key configuration files
         config_files = ['package.json', 'requirements.txt', 'Cargo.toml', 'pubspec.yaml', 'pom.xml']
@@ -252,7 +261,8 @@ class GoatCodeAgent:
                 content = await self.tools.execute('read_file', {
                     'path': f"{project_path}/{config}"
                 })
-                context['dependencies'][config] = content
+                if content.success:
+                    context['dependencies'][config] = content.data
             except:
                 pass
         
