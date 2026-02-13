@@ -6,8 +6,8 @@ real architecture: file indexing, context injection, test→fix loops,
 diff patching, token budget management, and memory systems.
 """
 
-__version__ = "1.0.0"
-__author__ = "GOATCODE Team"
+__version__ = "1.1.2"
+__author__ = "Shivay Singh"
 __license__ = "MIT"
 
 from .core.agent import GoatCodeAgent, create_agent, AgentResult
