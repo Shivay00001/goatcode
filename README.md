@@ -27,7 +27,7 @@ Unlike other AI coding assistants that rely on prompts alone, GOATCODE implement
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/goatcode.git
+git clone https://github.com/Shivay00001/goatcode.git
 cd goatcode
 
 # Install dependencies
