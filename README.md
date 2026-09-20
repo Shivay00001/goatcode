@@ -1,277 +1,262 @@
-# GOATCODE - Production-Grade Coding Agent
+# GOATCODE
 
-A **deterministic, tool-augmented, autonomous coding agent** that beats prompt-only solutions through real architecture.
+> A Python coding-agent framework for project-aware planning, tool execution, validation, and multi-provider LLM workflows.
 
-## 🎯 The 80% That Matters
+[![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Package](https://img.shields.io/badge/package-goatcode-blue)](./setup.py)
+[![Status](https://img.shields.io/badge/status-beta-yellow)](https://github.com/Shivay00001/goatcode)
+[![Ollama](https://img.shields.io/badge/local%20models-Ollama-black?logo=ollama)](https://ollama.com/)
+[![License](https://img.shields.io/badge/license-VisionQuantech%20Custom-orange)](./LICENSE)
 
-Unlike other AI coding assistants that rely on prompts alone, GOATCODE implements:
+GOATCODE is an experimental, tool-augmented coding agent designed to work with an existing project instead of generating isolated snippets. It analyzes project context, creates an implementation plan, invokes registered tools, validates changes, and reports the resulting files and checks.
 
-1. **🔍 File Indexing Engine** - AST-based semantic code search with vector embeddings
-2. **🧠 Context Injection** - Automatic relevance-based retrieval with token budget management
-3. **🔄 Test→Fix→Retry Loop** - Iterative validation with automatic error recovery
-4. **📊 Diff-Based Patching** - AST-aware minimal surgical edits (no full rewrites)
-5. **💰 Token Budget Manager** - Dynamic context window optimization
-6. **🗄️ Memory System** - Resolution pattern storage and retrieval
+## What it does
 
-**Prompt = 20%. Architecture = 80%**
+GOATCODE focuses on the engineering loop around code generation:
 
-## 🚀 Quick Start
+- **Project context:** inspect files, directories, dependencies, and framework signals.
+- **Planning:** break a request into implementation and validation steps.
+- **Tool execution:** read and write files, search code, inspect diffs, run tests, lint, and type checks.
+- **Validation loop:** test → diagnose → fix → retry, with bounded attempts.
+- **Provider abstraction:** use local Ollama models or hosted OpenAI and Anthropic models.
+- **Memory hooks:** store and retrieve reusable resolution patterns.
+- **CLI-first workflow:** interactive sessions for development and batch mode for automation.
 
-### Prerequisites
+> **Status:** GOATCODE is currently classified as **Beta** in its Python package metadata. Review generated diffs and run tests in a disposable branch or workspace before applying changes to important codebases.
 
-- Python 3.9+
-- For local models: [Ollama](https://ollama.com)
-- For SaaS: API key (OpenAI, Anthropic)
+## Architecture
 
-### Installation
+```text
+User request
+     │
+     ▼
+CLI / Python API
+     │
+     ▼
+Core orchestrator
+ ├── intent and project-context analysis
+ ├── risk analysis and implementation planning
+ ├── LLM provider interface
+ ├── tool registry
+ ├── memory lookup / storage
+ └── validation and retry loop
+     │
+     ▼
+Files, diffs, validation report, and execution status
+```
+
+### Repository layout
+
+```text
+goatcode/
+├── cli/                 # Command-line entry point
+├── core/                # Agent orchestration and execution state
+├── llm/                 # Provider interfaces and routing
+├── tools/               # File, search, test, lint, typecheck, and Git tools
+├── examples/            # Python usage examples
+├── requirements.txt     # Runtime and development dependencies
+├── setup.py             # Package metadata and goatcode CLI entry point
+├── install.sh           # Linux/macOS setup helper
+└── docker-compose.yml   # Development container definition
+```
+
+## Quick start
+
+### Requirements
+
+- Python **3.9 or newer**
+- An LLM provider:
+  - [Ollama](https://ollama.com/) for local models, or
+  - an OpenAI or Anthropic API key
+- Git for project inspection and diff workflows
+
+### Install from source
 
 ```bash
-# Clone repository
-git clone https://github.com/yourusername/goatcode.git
+git clone https://github.com/Shivay00001/goatcode.git
 cd goatcode
 
-# Install dependencies
-pip install -r requirements.txt
+python -m venv .venv
+# macOS/Linux
+source .venv/bin/activate
+# Windows PowerShell: .venv\\Scripts\\Activate.ps1
 
-# If using Ollama, pull a model
-ollama pull llama2
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pip install -e .
+```
+
+Or use the helper on Linux/macOS:
+
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+Confirm the CLI is available:
+
+```bash
+goatcode --help
+# Equivalent module invocation:
+python -m goatcode --help
+```
+
+## Run with a local model
+
+Install Ollama, start its service, and pull a coding model:
+
+```bash
 ollama pull codellama
+# Or use another model available in your Ollama installation.
+
+goatcode --provider ollama --model codellama
 ```
 
-### Usage
+Interactive commands include `/help`, `/status`, `/models`, and `/exit`.
 
-#### Interactive Mode (Recommended)
+## Run with hosted providers
+
+Pass credentials through your shell environment rather than committing them:
 
 ```bash
-# With local Ollama
-python -m goatcode --provider ollama --model llama2
-
-# With OpenAI
-python -m goatcode --provider openai --model gpt-4 --api-key $OPENAI_API_KEY
-
-# With Anthropic
-python -m goatcode --provider anthropic --model claude-3-opus
+export OPENAI_API_KEY="..."
+goatcode --provider openai --model gpt-4 --project ./my-project
 ```
 
-#### Batch Mode
+```bash
+export ANTHROPIC_API_KEY="..."
+goatcode --provider anthropic --model claude-3-opus --project ./my-project
+```
+
+Provider and model names depend on the installed SDKs and the provider account. Use `goatcode --help` for the options supported by the current CLI implementation.
+
+## Batch mode
+
+Submit one task and save the result:
 
 ```bash
-python -m goatcode --provider ollama \
-  -p "Create a Python function to parse JSON with error handling" \
+goatcode \
+  --provider ollama \
+  --model codellama \
+  --project ./my-project \
+  -p "Add error handling to the JSON parser and write tests" \
   -o result.json
 ```
 
-### Example Session
+The agent may modify files in the selected project. Use a clean Git branch, inspect `git diff`, and validate the result before merging.
 
-```
-🐐 GOATCODE - Production-Grade Coding Agent
+## Python API
 
-Interactive Mode - Type your coding requests
-Commands: /help, /exit, /status, /models
-------------------------------------------------------------
-
-📝 > Create a REST API endpoint for user authentication with JWT
-
-🚀 Starting execution...
-
-============================================================
-Status: SUCCESS
-============================================================
-
-📊 Analysis Summary:
-Creating a secure REST API endpoint for user authentication 
-using JWT tokens. Will include login, registration, and 
-protected route middleware.
-
-📋 Implementation Plan:
-  1. Create auth module with JWT utilities
-  2. Implement login endpoint with password hashing
-  3. Implement registration endpoint with validation
-  4. Create authentication middleware
-  5. Add comprehensive error handling
-
-📝 Files Modified:
-  [CREATE] src/auth/jwt_utils.py
-  [CREATE] src/auth/endpoints.py
-  [CREATE] src/auth/middleware.py
-  [UPDATE] requirements.txt
-
-✅ Validation Report:
-  ✓ All validations passed
-  ✓ Type checking clean
-  ✓ Tests passing (12/12)
-
-🎯 Confidence Score: 95%
-
-============================================================
-```
-
-## 🏗️ Architecture
-
-```
-goatcode/
-├── core/
-│   └── agent.py              # Main orchestrator
-├── llm/
-│   └── interface.py          # Multi-provider LLM support
-├── tools/
-│   └── registry.py           # Tool system
-├── context/
-│   └── manager.py            # Context pruning & injection
-├── memory/
-│   └── system.py             # Pattern storage & retrieval
-├── validation/
-│   └── engine.py             # Test→Fix→Retry loop
-└── cli/
-    └── main.py               # CLI entry point
-```
-
-### Execution Pipeline
-
-```
-User Request
-    ↓
-1. Intent Analysis (What to build?)
-    ↓
-2. Project Context (File structure, dependencies)
-    ↓
-3. Risk Analysis (Security, edge cases)
-    ↓
-4. Memory Lookup (Similar past solutions)
-    ↓
-5. Implementation Plan (Files, functions, steps)
-    ↓
-6. Code Generation (Complete, correct code)
-    ↓
-7. Validation Loop (Test → Fix → Retry)
-    ↓
-8. Diff Patching (Minimal surgical changes)
-    ↓
-Success / Report
-```
-
-## 🛠️ Available Tools
-
-- **read_file** - Read file contents
-- **write_file** - Write or overwrite files
-- **list_directory** - List project structure
-- **search_project** - Text-based code search
-- **semantic_search** - Vector-based code search
-- **run_tests** - Execute test suites
-- **run_linter** - Code linting
-- **run_typecheck** - Type checking
-- **git_diff** - Show git changes
-- **memory_lookup** - Search past solutions
-- **memory_store** - Store resolution patterns
-
-## 🤖 Supported LLM Providers
-
-### Local (Free)
-- **Ollama** - Run models locally
-  - llama2, codellama, mistral, mixtral
-  - No API costs, complete privacy
-
-### SaaS (API Key Required)
-- **OpenAI** - GPT-4, GPT-3.5-turbo
-- **Anthropic** - Claude 3 (Opus, Sonnet, Haiku)
-- **Google** - Gemini Pro (coming soon)
-
-### Multi-Provider with Fallback
+The package exposes an agent factory for scripted workflows:
 
 ```python
-from goatcode.llm.interface import create_multi_provider_router
+import asyncio
+from goatcode import create_agent
 
-router = create_multi_provider_router([
-    {'provider': 'ollama', 'model': 'llama2'},
-    {'provider': 'openai', 'model': 'gpt-3.5-turbo'}
-])
+
+async def main() -> None:
+    agent = create_agent(
+        llm_provider="ollama",
+        llm_model="codellama",
+    )
+    result = await agent.execute(
+        "Add validation and tests for the user model",
+        project_path="./my-project",
+    )
+    print(result.status.value)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-## 📊 Performance Comparison
+See [`examples/usage.py`](./examples/usage.py) for additional provider, batch, and fallback examples.
 
-| Feature | GOATCODE | Cursor | Copilot | ChatGPT |
-|---------|----------|---------|---------|---------|
-| File Indexing | ✅ | ❌ | ❌ | ❌ |
-| Context Injection | ✅ | ⚠️ | ❌ | ❌ |
-| Test→Fix Loop | ✅ | ❌ | ❌ | ❌ |
-| Diff Patching | ✅ | ❌ | ❌ | ❌ |
-| Memory System | ✅ | ❌ | ❌ | ❌ |
-| Token Budget | ✅ | ❌ | ❌ | ❌ |
-| Local Models | ✅ | ❌ | ❌ | ❌ |
+## Available tools
 
-## 🎯 Why This Wins
+The tool registry documents support for operations such as:
 
-### vs. Cursor/Copilot
-- ❌ They hide the architecture → ✅ GOATCODE shows the engineering
-- ❌ Prompt-only solutions → ✅ Real tool orchestration
-- ❌ No verification loop → ✅ Test→Fix→Retry cycle
-- ❌ No context management → ✅ Smart context injection
-- ❌ Cloud-only → ✅ Local Ollama support
+- `read_file` and `write_file`
+- `list_directory` and `search_project`
+- `run_tests`, `run_linter`, and `run_typecheck`
+- `git_diff`
+- `semantic_search` integration hooks
+- `memory_lookup` and `memory_store`
 
-### vs. ChatGPT
-- ❌ No project context → ✅ Full project analysis
-- ❌ No file operations → ✅ Complete tool system
-- ❌ No validation → ✅ Automated testing
-- ❌ No memory → ✅ Pattern learning
+Tool availability and framework detection should be verified against the current implementation before relying on a capability in automation.
 
-## 🔒 Security Features
+## Development
 
-- ✅ No hardcoded secrets
-- ✅ No unsafe eval/exec
-- ✅ Input validation
-- ✅ Least-privilege design
-- ✅ Automatic dependency checking
-
-## 🧪 Development
+Install the repository dependencies, then run the checks available in your environment:
 
 ```bash
-# Install dev dependencies
-pip install -r requirements-dev.txt
-
-# Run tests
-pytest tests/
-
-# Run linter
-flake8 goatcode/
-
-# Type checking
-mypy goatcode/
+python -m pytest tests/
+python -m flake8 goatcode/
+python -m mypy goatcode/
 ```
 
-## 📈 Roadmap
+The dependency file includes optional integrations for vector search and advanced AST parsing. They are commented out by default and are not required for the baseline CLI workflow.
 
-- [x] Core agent architecture
-- [x] Multi-provider LLM support
-- [x] Tool system
-- [ ] FAISS vector search
+## Security and safe operation
+
+A coding agent can read and modify a workspace and can execute developer tooling. Operate it with least privilege:
+
+- Run it in a disposable branch, sandbox, or container.
+- Never provide production credentials or unrestricted secrets.
+- Review generated diffs before committing or deploying.
+- Restrict the project path to the intended workspace.
+- Run tests, linters, type checks, and security scans independently.
+- Treat model output and generated code as untrusted until reviewed.
+- Prefer local models when source confidentiality requires it; hosted providers may receive submitted context.
+
+GOATCODE is not a substitute for code review, security review, or deployment approvals.
+
+## Production-readiness assessment
+
+### Strengths
+
+- Clear separation between orchestration, LLM providers, tools, CLI, and memory.
+- Local-model option supports privacy-sensitive development workflows.
+- Validation and retry concepts are appropriate for agentic code generation.
+- Package metadata provides an installable `goatcode` console command.
+
+### Priority improvements before production use
+
+1. Add and publish a reproducible automated test suite with coverage thresholds.
+2. Pin dependencies with a lockfile and run vulnerability/license checks in CI.
+3. Enforce workspace boundaries, path traversal protection, command allowlists, and execution timeouts.
+4. Add structured audit logs for prompts, tool calls, file changes, and validation results, with secret redaction.
+5. Make retry, token, cost, and model-fallback policies explicit and configurable.
+6. Add integration tests for each provider and deterministic mock-provider tests for offline CI.
+7. Harden the Docker and Compose workflows with a non-root user, resource limits, and documented volumes.
+8. Align package classifiers and documentation with the custom commercial license before publishing to PyPI.
+
+## Roadmap
+
+The existing project roadmap includes:
+
+- [ ] FAISS/ChromaDB vector search
 - [ ] AST-aware diff patching
 - [ ] Web interface
-- [ ] VSCode extension
-- [ ] CI/CD integration
-- [ ] Team collaboration features
+- [ ] VS Code extension
+- [ ] CI/CD integrations
+- [ ] Team collaboration and advanced memory/RAG
+- [ ] Multi-file refactoring and code-review mode
 
-## 🤝 Contributing
+## Contributing
 
-This is a production-grade reference implementation. Contributions welcome:
+1. Open an issue describing the change.
+2. Create a focused feature branch.
+3. Add or update tests and documentation.
+4. Run the relevant checks locally.
+5. Inspect generated diffs for unintended or unsafe changes.
+6. Open a pull request with provider, tool, and security implications documented.
 
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
+## License
 
-## 📝 License
+GOATCODE is distributed under the [VisionQuantech Custom Commercial License](./LICENSE), not the MIT License. Read the complete license before using it for revenue-generating, business, or enterprise work. Contact the repository owner for commercial licensing questions.
 
-MIT License - See LICENSE file
+## Links
 
-## 🙏 Acknowledgments
-
-- Inspired by the need for deterministic, verifiable AI coding
-- Built on top of excellent open-source tools
-- Community-driven development
-
----
-
-**Built with Python 🐍 | Powered by Determinism ⚡ | Designed for Production 🚀**
-
-*Prompt is 20%. This is the 80%.*
+- [Issues](https://github.com/Shivay00001/goatcode/issues)
+- [Source code](https://github.com/Shivay00001/goatcode)
