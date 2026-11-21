@@ -1,5 +1,7 @@
 # GOATCODE
 
+Built by [VisionQuantech](https://visionquantech.com) — AI agents, apps & tools for small businesses.
+
 > A Python coding-agent framework for project-aware planning, tool execution, validation, and multi-provider LLM workflows.
 
 [![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
